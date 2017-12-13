@@ -77,7 +77,7 @@ module StackMaster
 
       def create_stack_by_change_set
         @change_set = ChangeSet.create(stack_options.merge(change_set_type: 'CREATE'))
-        halt!(@change_set.status_reason) if @change_set.failed?
+        failed!(@change_set.status_reason) if @change_set.failed?
         @change_set.display(StackMaster.stdout)
         unless ask?('Create stack (y/n)? ')
           cf.delete_stack(stack_name: stack_name)
@@ -102,11 +102,17 @@ module StackMaster
       def update_stack
         upload_files
         @change_set = ChangeSet.create(stack_options)
-        halt!(@change_set.status_reason) if @change_set.failed?
+        if @change_set.failed?
+          if @change_set.status_reason == "The submitted information didn't contain changes. Submit different information to create a change set."
+            halt!(@change_set.status_reason)
+          else
+            failed!(@change_set.status_reason)
+          end
+        end
         @change_set.display(StackMaster.stdout)
         unless ask?("Apply change set (y/n)? ")
           ChangeSet.delete(@change_set.id)
-          halt! "Stack update aborted"
+          failed! "Stack update aborted"
         end
         execute_change_set
       end
@@ -183,7 +189,7 @@ module StackMaster
           @stack_definition.parameter_files.each do |parameter_file|
             StackMaster.stderr.puts " - #{parameter_file}"
           end
-          halt!
+          failed!
         end
       end
 
