@@ -112,7 +112,7 @@ module StackMaster
         @change_set.display(StackMaster.stdout)
         unless ask?("Apply change set (y/n)? ")
           ChangeSet.delete(@change_set.id)
-          failed! "Stack update aborted"
+          halt! "Stack update aborted"
         end
         execute_change_set
       end
